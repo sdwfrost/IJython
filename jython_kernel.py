@@ -39,7 +39,7 @@ class JythonKernel(Kernel):
             elif "JYTHON_HOME" in os.environ and "JAVA_HOME" in os.environ :
                self._executable=os.environ['JAVA_HOME']+"/bin/java -jar "+os.environ['JYTHON_HOME']+"/jython.jar"
             else:
-               raise Exception("JYTHON_HOME not set or jython not found") 
+               raise Exception("JYTHON_HOME not set or jython not found")
             self._child  = spawn(self._executable,timeout = None)
             self._child.waitnoecho(True)
             self._child.expect(u">>> ")
@@ -47,27 +47,25 @@ class JythonKernel(Kernel):
             self._child.setwinsize(600,400)
         finally:
             signal.signal(signal.SIGINT, sig)
-       
+
 
     def do_execute(self, code, silent, store_history=False, user_expressions=None,
                    allow_stdin=False):
         code   =  code.strip()
-	abort_msg = {'status': 'abort',
-                     'execution_count': self.execution_count}
+        abort_msg = {'status': 'abort','execution_count': self.execution_count}
         interrupt = False
         try:
-  	    output = self.jyrepl(code, timeout=None)
+            output = self.jyrepl(code, timeout=None)
             output = '\n'.join([line for line in output.splitlines()])+'\n'
         except KeyboardInterrupt:
             self._child.sendintr()
             output = self._child.before+output+'\n Current Jython cannot interrupt so restarting Jython'
             interrupt = True
             self._start_jython()
-	except EOF:
+        except EOF:
             output = self._child.before + 'Reached EOF Restarting Jython'
             self._start_jython()
-
- 	if not silent:
+        if not silent:
             stream_content = {'name': 'stdout', 'text': output}
             self.send_response(self.iopub_socket, 'stream', stream_content)
         if code.strip() and store_history:
@@ -85,15 +83,14 @@ class JythonKernel(Kernel):
 
         if not code or code[-1] == ' ':
             return default
-        
- 	tokens = code.split()
+        tokens = code.split()
         if not tokens:
             return default
 
         token = tokens[-1]
         start = cursor_pos - len(token)
         matches = []
-        
+
         if len(re.split(r"[^\w]",token)) > 1:
             cmd="dir("+re.split(r"[^\w]",token)[-2]+")"
             output=self.jyrepl(cmd,timeout=None)
@@ -111,7 +108,7 @@ class JythonKernel(Kernel):
         return {'matches': sorted(matches), 'cursor_start': start,
                 'cursor_end': cursor_pos, 'metadata': dict(),
                 'status': 'ok'}
-        
+
     def do_history(self,hist_access_type,output,raw,session=None,start=None,stoop=None,n=None,pattern=None,unique=None):
         if not self.hist_file:
             return {'history':[]}
@@ -156,7 +153,8 @@ class JythonKernel(Kernel):
         for line in code.splitlines():
             self._child.sendline(line)
             now_prompt=self._child.expect_exact([u">>> ",u"... "])
-            if len(self._child.before.splitlines())>1:    out+='\n'.join(self._child.before.splitlines()[1:])+'\n'
+            if len(self._child.before.splitlines())>1:
+                out+='\n'.join((self._child.before.splitlines()[1:]).encode('utf-8'))+'\n'
             now_prompt=self._child.expect_exact([u">>> ",u"... "])
         return out
 
